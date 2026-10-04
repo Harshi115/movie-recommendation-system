@@ -74,46 +74,66 @@ def fetch_tmdb_details(movie_id: int) -> dict:
         return {}
 
 
+# Wikipedia's API etiquette policy asks for a descriptive User-Agent
+# identifying the app and a contact URL — a generic or missing one is more
+# likely to be rate-limited or blocked outright, which is invisible from a
+# developer machine (different IP, lighter traffic) but very visible from a
+# shared hosting IP like Streamlit Community Cloud's.
+WIKIPEDIA_USER_AGENT = (
+    "MovieRecommenderStreamlitApp/1.0 "
+    "(https://github.com/Harshi115/movie-recommendation-system; contact via GitHub issues)"
+)
+
+
 @st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
 def fetch_wikipedia_details(title: str) -> dict:
     """Poster + overview for one movie, from Wikipedia — no API key needed,
     used whenever TMDB_API_KEY isn't configured. Searching "<title> film"
     rather than the bare title steers Wikipedia's search past disambiguation
     pages toward the actual film article in most cases; an empty dict on any
-    miss or network failure just means the placeholder poster is shown."""
-    try:
-        search = requests.get(
-            "https://en.wikipedia.org/w/api.php",
-            params={
-                "action": "query",
-                "list": "search",
-                "srsearch": f"{title} film",
-                "srlimit": 1,
-                "format": "json",
-            },
-            headers={"User-Agent": "movie-recommender-streamlit-app/1.0"},
-            timeout=5,
-        )
-        search.raise_for_status()
-        results = search.json().get("query", {}).get("search", [])
-        if not results:
-            return {}
-        page_title = results[0]["title"]
+    miss or network failure just means the placeholder poster is shown.
 
-        summary = requests.get(
-            f"https://en.wikipedia.org/api/rest_v1/page/summary/{requests.utils.quote(page_title)}",
-            headers={"User-Agent": "movie-recommender-streamlit-app/1.0"},
-            timeout=5,
-        )
-        summary.raise_for_status()
-        data = summary.json()
-        return {
-            "poster_url": data.get("thumbnail", {}).get("source"),
-            "overview": data.get("extract"),
-            "source_url": data.get("content_urls", {}).get("desktop", {}).get("page"),
-        }
-    except requests.RequestException:
-        return {}
+    One retry on a transient failure (timeout, 429, 5xx): shared hosting IPs
+    see occasional throttling that a single request would just give up on.
+    """
+    headers = {"User-Agent": WIKIPEDIA_USER_AGENT}
+    for attempt in range(2):
+        try:
+            search = requests.get(
+                "https://en.wikipedia.org/w/api.php",
+                params={
+                    "action": "query",
+                    "list": "search",
+                    "srsearch": f"{title} film",
+                    "srlimit": 1,
+                    "format": "json",
+                },
+                headers=headers,
+                timeout=6,
+            )
+            search.raise_for_status()
+            results = search.json().get("query", {}).get("search", [])
+            if not results:
+                return {}
+            page_title = results[0]["title"]
+
+            summary = requests.get(
+                f"https://en.wikipedia.org/api/rest_v1/page/summary/{requests.utils.quote(page_title)}",
+                headers=headers,
+                timeout=6,
+            )
+            summary.raise_for_status()
+            data = summary.json()
+            return {
+                "poster_url": data.get("thumbnail", {}).get("source"),
+                "overview": data.get("extract"),
+                "source_url": data.get("content_urls", {}).get("desktop", {}).get("page"),
+            }
+        except (requests.RequestException, ValueError):
+            if attempt == 0:
+                continue
+            return {}
+    return {}
 
 
 def fetch_movie_details(movie_id: int, title: str) -> dict:

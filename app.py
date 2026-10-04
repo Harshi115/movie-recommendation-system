@@ -49,9 +49,9 @@ def build_similarity(tags: tuple[str, ...]):
 
 @st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
 def fetch_tmdb_details(movie_id: int) -> dict:
-    """Poster + overview + rating for one movie. Empty dict (not an
-    exception) on any failure, so a flaky network never breaks the page —
-    callers just fall back to the placeholder poster and no overview."""
+    """Poster + overview + rating for one movie, from TMDB. Empty dict (not
+    an exception) on any failure, so a flaky network never breaks the page —
+    callers just fall back to Wikipedia, then the placeholder poster."""
     api_key = get_api_key()
     if not api_key:
         return {}
@@ -68,10 +68,62 @@ def fetch_tmdb_details(movie_id: int) -> dict:
             "overview": data.get("overview"),
             "rating": data.get("vote_average"),
             "release_date": data.get("release_date"),
-            "tmdb_url": f"https://www.themoviedb.org/movie/{movie_id}",
+            "source_url": f"https://www.themoviedb.org/movie/{movie_id}",
         }
     except requests.RequestException:
         return {}
+
+
+@st.cache_data(ttl=60 * 60 * 12, show_spinner=False)
+def fetch_wikipedia_details(title: str) -> dict:
+    """Poster + overview for one movie, from Wikipedia — no API key needed,
+    used whenever TMDB_API_KEY isn't configured. Searching "<title> film"
+    rather than the bare title steers Wikipedia's search past disambiguation
+    pages toward the actual film article in most cases; an empty dict on any
+    miss or network failure just means the placeholder poster is shown."""
+    try:
+        search = requests.get(
+            "https://en.wikipedia.org/w/api.php",
+            params={
+                "action": "query",
+                "list": "search",
+                "srsearch": f"{title} film",
+                "srlimit": 1,
+                "format": "json",
+            },
+            headers={"User-Agent": "movie-recommender-streamlit-app/1.0"},
+            timeout=5,
+        )
+        search.raise_for_status()
+        results = search.json().get("query", {}).get("search", [])
+        if not results:
+            return {}
+        page_title = results[0]["title"]
+
+        summary = requests.get(
+            f"https://en.wikipedia.org/api/rest_v1/page/summary/{requests.utils.quote(page_title)}",
+            headers={"User-Agent": "movie-recommender-streamlit-app/1.0"},
+            timeout=5,
+        )
+        summary.raise_for_status()
+        data = summary.json()
+        return {
+            "poster_url": data.get("thumbnail", {}).get("source"),
+            "overview": data.get("extract"),
+            "source_url": data.get("content_urls", {}).get("desktop", {}).get("page"),
+        }
+    except requests.RequestException:
+        return {}
+
+
+def fetch_movie_details(movie_id: int, title: str) -> dict:
+    """TMDB first (richer: rating, release date) when a key is configured,
+    otherwise Wikipedia — both are keyless-safe, so there's always a best
+    available answer rather than an all-or-nothing poster feature."""
+    details = fetch_tmdb_details(movie_id)
+    if details.get("poster_url"):
+        return details
+    return fetch_wikipedia_details(title) or details
 
 
 def recommend(movies: pd.DataFrame, similarity, title: str, count: int) -> list[int]:
@@ -83,12 +135,12 @@ def recommend(movies: pd.DataFrame, similarity, title: str, count: int) -> list[
 
 def render_movie_card(column, movies: pd.DataFrame, row_index: int):
     row = movies.iloc[row_index]
-    details = fetch_tmdb_details(int(row["movie_id"]))
+    details = fetch_movie_details(int(row["movie_id"]), row["title"])
     with column:
         st.image(details.get("poster_url") or PLACEHOLDER_POSTER, use_container_width=True)
         title_line = row["title"]
-        if details.get("tmdb_url"):
-            title_line = f"[{title_line}]({details['tmdb_url']})"
+        if details.get("source_url"):
+            title_line = f"[{title_line}]({details['source_url']})"
         st.markdown(f"**{title_line}**")
         meta_bits = []
         if details.get("rating"):
@@ -114,10 +166,9 @@ def main():
     st.caption(f"Content-based recommendations over {len(movies):,} movies, by similar plot, genre and cast.")
 
     if not get_api_key():
-        st.info(
-            "Posters and overviews are off because no TMDB_API_KEY is configured. "
-            "Get a free key at themoviedb.org and add it to this app's secrets to turn them on.",
-            icon="🔑",
+        st.caption(
+            "🔑 Posters are pulled from Wikipedia right now. Add a free TMDB_API_KEY to this "
+            "app's secrets for ratings, release years and more reliable artwork."
         )
 
     with st.sidebar:

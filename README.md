@@ -9,13 +9,14 @@ very first search.
 ## Features
 
 - **Search and recommend**: type any of the ~4,800 movies and get the most
-  similar titles, with posters, ratings and an overview pulled from TMDB.
+  similar titles, with posters and an overview.
 - **Surprise me**: a random pick plus its closest matches, for when you can't
   decide what to search for.
 - **Favorites**: mark movies you like as you browse; they're listed in the
   sidebar for the rest of your session.
-- **Works without an API key**: posters are optional — the recommender itself
-  needs nothing beyond what's already in this repo.
+- **No setup required for posters**: they come from Wikipedia by default —
+  no account, no API key. Add a TMDB key (see below) for ratings and release
+  years too, and slightly more reliable artwork.
 
 ## Running it locally
 
@@ -26,11 +27,13 @@ streamlit run app.py
 
 Open the URL Streamlit prints (usually `http://localhost:8501`).
 
-### Turning on posters
+### Posters and overviews
 
-Posters and overviews come from [TMDB](https://www.themoviedb.org/settings/api)
-(free, instant signup). Once you have a key, create
-`.streamlit/secrets.toml` (already gitignored) with:
+These work out of the box via Wikipedia — nothing to configure. Adding a
+free [TMDB](https://www.themoviedb.org/settings/api) key additionally
+brings in each movie's rating and release year, and TMDB's own artwork
+(preferred over Wikipedia's when both are available). Once you have a key,
+create `.streamlit/secrets.toml` (already gitignored) with:
 
 ```toml
 TMDB_API_KEY = "your-key-here"

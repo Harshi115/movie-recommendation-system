@@ -1,300 +1,83 @@
-# 🎬 Movie Recommender System
+# 🎬 Movie Recommender
 
-A machine learning-based movie recommendation system that suggests movies to users based on their preferences using cosine similarity algorithms.
+A content-based movie recommender over the TMDB 5000 movies dataset. Pick a
+movie you like, and it finds similar titles by comparing each movie's combined
+tags (overview, genres, keywords, cast and crew) with cosine similarity over a
+bag-of-words vectorization — no user ratings needed, so it works from the
+very first search.
 
-## 📋 Table of Contents
-- [Overview](#overview)
-- [Features](#features)
-- [Technologies Used](#technologies-used)
-- [Dataset](#dataset)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Model Development](#model-development)
-- [Deployment](#deployment)
-  
+## Features
 
-## 🎯 Overview
+- **Search and recommend**: type any of the ~4,800 movies and get the most
+  similar titles, with posters, ratings and an overview pulled from TMDB.
+- **Surprise me**: a random pick plus its closest matches, for when you can't
+  decide what to search for.
+- **Favorites**: mark movies you like as you browse; they're listed in the
+  sidebar for the rest of your session.
+- **Works without an API key**: posters are optional — the recommender itself
+  needs nothing beyond what's already in this repo.
 
-This project implements a content-based movie recommendation system that analyzes movie features and calculates similarity scores between movies to provide personalized recommendations. The system uses cosine similarity to find movies similar to a user's searched movie and suggests relevant titles.
+## Running it locally
 
-## ✨ Features
-
-- **Intelligent Recommendations**: Uses cosine similarity algorithm for accurate movie suggestions
-- **User-Friendly Interface**: Intuitive frontend developed with PyCharm IDE
-- **Large Dataset**: Trained on 5000+ movies from Kaggle
-- **Real-time Search**: Instant movie recommendations based on user input
-- **Data Processing**: Comprehensive data cleaning and preprocessing pipeline
-- **Scalable Architecture**: Modular design for easy maintenance and updates
-
-## 🛠️ Technologies Used
-
-### Backend & Machine Learning
-- **Python 3.8+**: Core programming language
-- **scikit-learn**: Machine learning library for cosine similarity
-- **pandas**: Data manipulation and analysis
-- **NumPy**: Numerical computing
-- **pickle**: Model serialization
-- **ast**: Abstract syntax tree processing
-
-### Development Environment
-- **Jupyter Notebook**: Model development and experimentation
-- **PyCharm IDE**: Frontend development and project management
-
-### Additional Libraries
-- **matplotlib/seaborn**: Data visualization (optional)
-- **streamlit/flask**: Web framework (if applicable)
-
-## 📊 Dataset
-
-- **Source**: Kaggle Movies Dataset
-- **Size**: 5,000 movies
-- **Features**: Movie titles, genres, cast, crew, overview, ratings, etc.
-- **Format**: CSV file with comprehensive movie information
-
-## 🚀 Installation
-
-### Prerequisites
-```bash
-Python 3.8 or higher
-pip package manager
-```
-
-### Step 1: Clone the Repository
-```bash
-git clone https://github.com/yourusername/movie-recommender-system.git
-cd movie-recommender-system
-```
-
-### Step 2: Create Virtual Environment
-```bash
-# Create virtual environment
-python -m venv movie_env
-
-# Activate virtual environment
-# On Windows:
-movie_env\Scripts\activate
-# On macOS/Linux:
-source movie_env/bin/activate
-```
-
-### Step 3: Install Dependencies
 ```bash
 pip install -r requirements.txt
-```
-
-### Step 4: Download Dataset
-1. Download the movie dataset from Kaggle
-2. Place the CSV file in the `data/` directory
-3. Update the file path in the configuration if necessary
-
-## 💻 Usage
-
-### Running the Jupyter Notebook (Model Development)
-```bash
-jupyter notebook
-# Open 'movie_recommender_model.ipynb'
-```
-
-### Running the Application
-```bash
-# If using Streamlit
-streamlit run app.py
-
-# If using Flask
-python app.py
-```
-
-### Basic Usage Example
-```python
-from movie_recommender import MovieRecommender
-
-# Initialize the recommender
-recommender = MovieRecommender()
-
-# Load the trained model
-recommender.load_model('models/movie_similarity_model.pkl')
-
-# Get recommendations
-recommendations = recommender.recommend_movies('The Dark Knight', num_recommendations=5)
-print(recommendations)
-```
-
-## 📁 Project Structure
-
-```
-movie-recommender-system/
-│
-├── data/
-│   ├── raw/
-│   │   └── movies_dataset.csv
-│   └── processed/
-│       └── cleaned_movies.csv
-│
-├── notebooks/
-│   ├── data_exploration.ipynb
-│   ├── data_preprocessing.ipynb
-│   └── model_development.ipynb
-│
-├── src/
-│   ├── __init__.py
-│   ├── data_preprocessing.py
-│   ├── feature_extraction.py
-│   ├── model.py
-│   └── recommender.py
-│
-├── models/
-│   ├── similarity_matrix.pkl
-│   └── movie_features.pkl
-│
-├── frontend/
-│   ├── app.py
-│   ├── templates/
-│   └── static/
-│
-├── tests/
-│   ├── test_model.py
-│   └── test_recommender.py
-│
-├── requirements.txt
-├── setup.py
-├── README.md
-└── .gitignore
-```
-
-## 🧠 Model Development
-
-### Data Preprocessing Steps
-1. **Data Cleaning**: Remove duplicates, handle missing values
-2. **Feature Engineering**: Extract relevant features (genres, cast, keywords)
-3. **Text Processing**: Tokenization, stemming, stop word removal
-4. **Vectorization**: Convert text data to numerical vectors
-
-### Model Training Process
-1. **Feature Extraction**: Create feature vectors for each movie
-2. **Similarity Calculation**: Compute cosine similarity matrix
-3. **Model Serialization**: Save trained model using pickle
-4. **Validation**: Test model performance and accuracy
-
-### Algorithm: Cosine Similarity
-```python
-from sklearn.metrics.pairwise import cosine_similarity
-
-# Calculate similarity matrix
-similarity_matrix = cosine_similarity(movie_features)
-```
-
-## 🌐 Deployment
-
-### Local Deployment
-
-#### Option 1: Streamlit (Recommended for beginners)
-```bash
-# Install Streamlit
-pip install streamlit
-
-# Run the application
 streamlit run app.py
 ```
 
-#### Option 2: Flask
-```bash
-# Install Flask
-pip install flask
+Open the URL Streamlit prints (usually `http://localhost:8501`).
 
-# Run the application
-python app.py
+### Turning on posters
+
+Posters and overviews come from [TMDB](https://www.themoviedb.org/settings/api)
+(free, instant signup). Once you have a key, create
+`.streamlit/secrets.toml` (already gitignored) with:
+
+```toml
+TMDB_API_KEY = "your-key-here"
 ```
 
-### Cloud Deployment
+## Deploying
 
-#### Heroku Deployment
-1. Create `Procfile`:
+This is a stock Streamlit app, so it deploys the same way most anywhere:
+
+- **Streamlit Community Cloud**: connect this repo at
+  [share.streamlit.io](https://share.streamlit.io), set `app.py` as the entry
+  point, and add `TMDB_API_KEY` under the app's Secrets.
+- **Hugging Face Spaces**: create a Space with the Streamlit SDK, and push
+  this repo to it; add `TMDB_API_KEY` under the Space's Settings → Variables
+  and secrets.
+- **Docker / any host**: `requirements.txt` has everything needed —
+  `streamlit run app.py --server.port $PORT --server.address 0.0.0.0`.
+
+## How the recommendations work
+
+`data/movie_dict.pkl` carries three columns per movie: `movie_id`, `title`,
+and `tags` — a single pre-stemmed string combining the movie's overview,
+genres, keywords, top cast and director. At startup, `app.py`:
+
+1. Vectorizes `tags` with `CountVectorizer` (top 5,000 words, English stop
+   words removed).
+2. Computes a cosine-similarity matrix between every pair of movies.
+3. For a chosen movie, returns the N movies with the highest similarity
+   score (excluding the movie itself).
+
+Both steps are cached (`@st.cache_data` / `@st.cache_resource`), so they run
+once per app instance, not on every search.
+
+## Project structure
+
 ```
-web: streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
-```
-
-2. Create `runtime.txt`:
-```
-python-3.9.16
-```
-
-3. Deploy to Heroku:
-```bash
-heroku create your-app-name
-git push heroku main
-```
-
-#### Streamlit Cloud
-1. Push code to GitHub
-2. Connect repository to Streamlit Cloud
-3. Deploy automatically
-
-#### Docker Deployment
-```dockerfile
-# Dockerfile
-FROM python:3.9-slim
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . .
-EXPOSE 8501
-
-CMD ["streamlit", "run", "app.py"]
-```
-
-```bash
-# Build and run Docker container
-docker build -t movie-recommender .
-docker run -p 8501:8501 movie-recommender
+app.py                  the whole app
+data/movie_dict.pkl      movie_id + title + tags for ~4,800 movies
+legacy/                 an earlier MySQL-backed login/register flow,
+                         kept for reference — not wired into app.py, since
+                         it needs a locally-running MySQL server and stored
+                         passwords in plain text
+requirements.txt
 ```
 
-### Production Considerations
-- **Caching**: Implement Redis for faster recommendations
-- **Database**: Use PostgreSQL/MongoDB for movie data storage
-- **API**: Create REST API endpoints for recommendations
-- **Monitoring**: Add logging and error tracking
-- **Security**: Implement input validation and rate limiting
+## Credits
 
-## 🔧 Configuration
-
-Create a `config.py` file:
-```python
-# Configuration settings
-DATA_PATH = 'data/movies_dataset.csv'
-MODEL_PATH = 'models/similarity_matrix.pkl'
-NUM_RECOMMENDATIONS = 10
-SIMILARITY_THRESHOLD = 0.1
-```
-
-## 📈 Performance Optimization
-
-1. **Preprocessing**: Cache processed data
-2. **Model Loading**: Load model once at startup
-3. **Vectorization**: Use sparse matrices for memory efficiency
-4. **Indexing**: Implement efficient search algorithms
-
-## 🧪 Testing
-
-Run tests using:
-```bash
-# Run all tests
-python -m pytest tests/
-
-# Run specific test
-python -m pytest tests/test_model.py -v
-```
-
-
-
-## 🙏 Acknowledgments
-
-- Kaggle for providing the movie dataset
-- scikit-learn community for excellent documentation
-- PyCharm team for the powerful IDE
-
-
-
-**⭐ Star this repository if you found it helpful!**
+Dataset: [TMDB 5000 Movie Dataset](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata)
+(Kaggle). Poster art and metadata: [The Movie Database (TMDB)](https://www.themoviedb.org/).
+This product uses the TMDB API but is not endorsed or certified by TMDB.
